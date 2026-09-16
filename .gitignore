@@ -37,3 +37,12 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Java
+*.class
+out/
+*.jar
+*.zip
+
+# Windows (mark of the web ao extrair no NTFS)
+*Zone.Identifier
