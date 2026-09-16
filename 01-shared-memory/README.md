@@ -42,12 +42,12 @@ Pontos-chave:
 
 ```
 01-shared-memory/
-├── shm_semaphore.py       # SHM + Semáforo (leitura/escrita, medição de tempo)
-├── shm_numpy_histogram.py       # SHM + NumPy (cálculo de histograma)
-└── manager_producer_consumer.py       # Managers (produtor/consumidor com Value/Event)
+├── shm_semaphore.py              # SHM + Semáforo (leitura/escrita, medição de tempo)
+├── shm_numpy_histogram.py        # SHM + NumPy (cálculo de histograma)
+└── manager_producer_consumer.py  # Managers (produtor/consumidor com Value/Event)
 ```
 
-## Módulos
+## Os scripts
 
 ### `shm_semaphore.py` — SHM e Semáforo: medindo o tempo de acesso
 
@@ -62,8 +62,8 @@ um **leitor** (`'r'`) e um **escritor** (`'w'`).
   2. Lê (`bytes(shm.buf)`) ou escreve (`shm.buf[:] = ...`) — mede o tempo da
      operação.
   3. Libera o semáforo (`release`).
-- Ao final imprime os **tempos médios** de aquisição e de operação (dica de
-  formatação: `{:.2e}` para notação científica).
+- Ao final imprime os **tempos médios** de aquisição e de operação, em
+  notação científica (`{:.2e}`).
 - O supervisor aguarda os filhos com `os.waitpid` e sempre libera a SHM com
   `.close()` **e** `.unlink()`.
 
@@ -109,7 +109,7 @@ entre instâncias (`Value`, `Event`, `ShareableList`).
 ## Como executar
 
 ```bash
-# a partir da raiz do repositório, com o .venv ativo e o NumPy instalado
+# com o .venv ativo e o NumPy instalado
 cd 01-shared-memory
 python shm_semaphore.py
 python shm_numpy_histogram.py

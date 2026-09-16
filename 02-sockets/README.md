@@ -24,18 +24,19 @@ selecionado pelo argumento `-s`/`--server`:
 
 ```
 02-sockets/
-├── tcp_echo.py           # Echo server TCP: backlog do listen() e threads
-├── http_get.py           # Servidor HTTP: tratando uma requisição GET
-├── xmlrpc_math.py           # XML-RPC: expondo funções sobre o HTTP
+├── tcp_echo.py               # Echo server TCP: backlog do listen() e threads
+├── http_get.py               # Servidor HTTP: tratando uma requisição GET
+├── xmlrpc_math.py            # XML-RPC: expondo funções sobre o HTTP
 ├── task_service_server.py    # Lista de tarefas: serviço XML-RPC
-└── task_service_client.py    # Lista de tarefas: teste de validação da interface
+└── task_service_client.py    # Lista de tarefas: validação da interface
 ```
 
-## Módulos
+## Os scripts
 
 ### `tcp_echo.py` — fila de espera e atendimento concorrente
 
-O script estende o exemplo base com o que é preciso para observar a fila:
+O script estende o par cliente/servidor mínimo com o que é preciso para
+observar a fila:
 
 - `DELAY = 5` — atraso artificial (`time.sleep`) **no tratamento da
   requisição**, antes de responder, simulando processamento demorado.
@@ -109,7 +110,7 @@ de texto (e bytes)** que descreve a mensagem enviada ao servidor, a qual
 desencadeia um processamento e gera uma mensagem de resposta.
 
 A biblioteca padrão do Python já traz esse protocolo pronto sobre os sockets do
-módulo anterior, em `http.server`:
+script anterior, em `http.server`:
 
 - **`BaseHTTPRequestHandler`** — recebe a conexão já aceita, faz o *parsing* da
   linha de requisição e dos cabeçalhos, e despacha para o método
@@ -156,7 +157,7 @@ para **expor funções** de uma aplicação ao acesso de processos externos. Se 
 HTTP já é um RPC básico com verbos fixos, o XML-RPC usa esse transporte para
 carregar a chamada de verdade: um `POST` cujo corpo é um XML com o **nome do
 método** e seus **parâmetros**, e cuja resposta é o **valor de retorno** — tudo
-sobre a mesma porta e o mesmo protocolo do etapa anterior.
+sobre a mesma porta e o mesmo protocolo do script anterior.
 
 **Servidor** (`SimpleXMLRPCServer`) — três formas de registrar o que é exposto:
 
@@ -266,7 +267,7 @@ servidor no ar:
 | `404` | `finish_task` de um id inexistente |
 | `409` | `finish_task` de uma tarefa já finalizada |
 
-**Cliente.** Percorre o roteiro do roteiro — cria 3 tarefas, lista todas,
+**Cliente.** Percorre o roteiro completo — cria 3 tarefas, lista todas,
 finaliza uma, lista finalizadas, lista abertas — e transforma cada etapa em uma
 verificação:
 
@@ -292,8 +293,8 @@ resultado: interface validada
 
 ## Como executar
 
-O `tcp_echo.py` roda em dois terminais — o primeiro como servidor, o segundo como
-cliente:
+O `tcp_echo.py` roda em dois terminais — o primeiro como servidor, o segundo
+como cliente:
 
 ```bash
 cd 02-sockets
@@ -309,8 +310,8 @@ python tcp_echo.py -n 2               # duas requisições simultâneas
 python tcp_echo.py -n 4               # estoura a fila do listen(1)
 ```
 
-O `http_get.py` sobe o servidor HTTP; o cliente pode ser o navegador, o `curl` ou
-qualquer socket:
+O `http_get.py` sobe o servidor HTTP; o cliente pode ser o navegador, o `curl`
+ou qualquer socket:
 
 ```bash
 # terminal 1
@@ -320,7 +321,7 @@ python http_get.py
 curl -v http://localhost:50007/     # ou abra a URL no navegador
 ```
 
-O `xmlrpc_math.py` volta ao par servidor/cliente do primeiro etapa:
+O `xmlrpc_math.py` volta ao par servidor/cliente do primeiro script:
 
 ```bash
 # terminal 1
@@ -330,7 +331,7 @@ python xmlrpc_math.py -s
 python xmlrpc_math.py
 ```
 
-O `task_service` separa servidor e cliente em arquivos próprios:
+O serviço de tarefas separa servidor e cliente em arquivos próprios:
 
 ```bash
 # terminal 1

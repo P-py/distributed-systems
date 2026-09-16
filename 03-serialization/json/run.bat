@@ -1,5 +1,5 @@
 @echo off
-rem Os 4 testes do roteiro, versao Windows. Rode de dentro do json\: run.bat
+rem Versao Windows do run.sh. Rode de dentro de 03-serialization\json\: run.bat
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
@@ -16,12 +16,12 @@ set "CP=java;%GSON_JAR%"
 
 javac -cp "%GSON_JAR%" -d java java\*.java || exit /b 1
 
-echo === Teste 1: Java gera o JSON ===
+echo === 1/4: Java gera o JSON ===
 for /f "delims=" %%i in ('java -cp "%CP%" MyApp') do set "JSON_JAVA=%%i"
 echo !JSON_JAVA!
 
 echo.
-echo === Teste 2: Python gera o JSON ===
+echo === 2/4: Python gera o JSON ===
 for /f "delims=" %%i in ('python python\MyApp.py') do set "JSON_PYTHON=%%i"
 echo !JSON_PYTHON!
 
@@ -30,11 +30,11 @@ set "ARG_JAVA=!JSON_JAVA:"=\"!"
 set "ARG_PYTHON=!JSON_PYTHON:"=\"!"
 
 echo.
-echo === Teste 3: JSON do Java lido pelo Python ===
+echo === 3/4: JSON do Java lido pelo Python ===
 python python\MyApp.py "!ARG_JAVA!"
 
 echo.
-echo === Teste 4: JSON do Python lido pelo Java ===
+echo === 4/4: JSON do Python lido pelo Java ===
 java -cp "%CP%" MyApp "!ARG_PYTHON!"
 
 endlocal

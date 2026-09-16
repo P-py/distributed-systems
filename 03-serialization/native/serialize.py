@@ -13,14 +13,18 @@ class Person:
     LuckNumbers: list[int] = field(default_factory=list)
 
 
+def encode(p: Person) -> str:
+    """Usado também pelo deserialize.py, para validar a volta re-serializando."""
+    return b64encode(pickle.dumps(p)).decode()
+
+
 if __name__ == "__main__":
-    # Dados de amostra
+    # Dados de amostra: o base64 não é criptografia, quem tiver a string lê
+    # todos os campos em claro.
     p = Person(
         Name="Alan Turing",
         EnrollNumber=424242,
         Height=1.77,
         LuckNumbers=[7, 23, 47],
     )
-    dumped = pickle.dumps(p)
-    encoded = b64encode(dumped).decode()
-    print(encoded)
+    print(encode(p))

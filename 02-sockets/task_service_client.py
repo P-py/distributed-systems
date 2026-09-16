@@ -26,7 +26,7 @@ with xmlrpc.client.ServerProxy(f'http://{HOST}:{PORT}/',
 
     created = [
         proxy.create_task('Estudar sockets', 'Rever o backlog do listen() e o accept()'),
-        proxy.create_task('Escrever o relatório', 'Documentar os módulos do 02-sockets'),
+        proxy.create_task('Escrever as notas', 'Documentar o que o serviço expõe'),
         proxy.create_task('Revisar o XML-RPC'),
     ]
     created_ids = [task['id'] for task in created]
