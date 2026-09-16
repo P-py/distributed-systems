@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+// Sem isto a classe externa se chamaria MyApp, colidindo com a da aplicação.
+option java_outer_classname = "MyAppProto";
+option java_multiple_files = true;
+
+message Person {
+  string name = 1;
+  int32 enroll_number = 2;
+  float height = 3;
+  repeated int32 luck_numbers = 4;
+}
