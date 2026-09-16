@@ -25,9 +25,11 @@ htmlcov/
 # Shared memory / IPC leftovers
 /dev/shm/mem_block
 
-# Editors / IDE
+# Editors / IDE / assistentes
 .vscode/
 .idea/
+.claude/
+CLAUDE.local.md
 *.swp
 *~
 
