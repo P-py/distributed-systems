@@ -44,9 +44,14 @@ para as duas linguagens.
 │   └── python/MyApp.py     #   A outra ponta, com o json da biblioteca padrão
 └── protobuf/               # Formato binário neutro, a partir de uma IDL
     ├── MyApp.proto         #   O Person escrito na IDL do proto3
-    ├── run.sh / run.bat    #   Chama o protoc para as duas linguagens
-    ├── java/               #   Código gerado pelo protoc (versionado)
-    └── python/             #   Código gerado pelo protoc (versionado)
+    ├── generate.sh / .bat  #   Chama o protoc para as duas linguagens
+    ├── run.sh / run.bat    #   Compila e roda a travessia Python → Java
+    ├── java/
+    │   ├── MyApp.java      #   base64 → objeto, validando a integridade
+    │   └── Person.java …   #   Código gerado pelo protoc (versionado)
+    └── python/
+        ├── MyApp.py        #   objeto → base64 (e a volta, por argumento)
+        └── MyApp_pb2.py    #   Código gerado pelo protoc (versionado)
 ```
 
 Nos três formatos o objeto `Person` tem os mesmos quatro campos — `name`
@@ -157,11 +162,12 @@ execução, e o `.gitignore` cobre `*.jar`.
 ### Protocol Buffers
 
 O código das duas linguagens é **gerado** a partir da IDL pelo compilador
-`protoc`; o `run.sh` refaz a geração:
+`protoc`. O resultado está versionado, então isto só precisa rodar quando o
+`MyApp.proto` mudar:
 
 ```bash
 cd 03-serialization/protobuf
-./run.sh
+./generate.sh
 ```
 
 ```
@@ -175,6 +181,52 @@ PersonOrBuilder.java
 protoc --python_out=python MyApp.proto
 MyApp_pb2.py
 ```
+
+A travessia é a do `native/`, só que entre linguagens: o **Python serializa** o
+`Person` e imprime o stream em base64; o **Java** decodifica, lê os bytes com a
+classe gerada e imprime os campos. O `run.sh` baixa o `protobuf-java` se faltar,
+prepara o venv do módulo, compila e roda os quatro casos:
+
+```bash
+cd 03-serialization/protobuf
+./run.sh
+```
+
+```
+=== 1/4: Python serializa e imprime o base64 ===
+CgtBbGFuIFR1cmluZxCy8hkdXI/iPyIDBxcv
+
+=== 2/4: Java lê o stream de amostra da constante ===
+Name: Alan Turing
+EnrollNumber: 424242
+Height: 1.77
+LuckNumbers: [7, 23, 47]
+OK: objeto recuperado integralmente (re-serialização idêntica)
+
+=== 3/4: Java lê o base64 gerado agora pelo Python ===
+(a mesma saída)
+
+=== 4/4: Python lê o mesmo base64 ===
+(a mesma saída)
+```
+
+Ou um de cada vez — note que o classpath precisa do diretório das classes **e**
+do jar do `protobuf-java`, e que o Python precisa do runtime do protobuf
+instalado (o `run.sh` cuida das duas coisas):
+
+```bash
+javac -cp java/protobuf-java-3.6.1.jar -d java java/*.java
+
+../.venv/bin/python python/MyApp.py                 # 1: Python serializa
+java -cp "java:java/protobuf-java-3.6.1.jar" MyApp  # 2: Java lê a constante
+
+# 3: encadeado, com o base64 gerado agora
+java -cp "java:java/protobuf-java-3.6.1.jar" MyApp "$(../.venv/bin/python python/MyApp.py)"
+```
+
+As duas pontas conferem o que receberam **re-serializando** o objeto e
+comparando com o base64 de entrada, como no `native/` — a diferença é que aqui
+as duas linguagens chegam ao mesmo stream.
 
 O próprio `protoc` também serializa e desserializa da linha de comando, o que
 permite ver o formato sem escrever nenhum código:
@@ -376,7 +428,55 @@ option java_multiple_files = true;           // Person em arquivo próprio
 
 **O código gerado é versionado de propósito.** Assim o repositório pode ser
 lido (e o Java compilado) sem ter o `protoc` instalado; quando o `.proto` muda,
-o certo é rodar o `run.sh` de novo, nunca editar o gerado à mão.
+o certo é rodar o `generate.sh` de novo, nunca editar o gerado à mão.
+
+**O nome do campo na IDL é a única coisa que as duas linguagens não
+compartilham.** O `.proto` declara `enroll_number`, e cada gerador aplica a
+convenção da sua linguagem: no Java o campo vira `getEnrollNumber()`, no Python
+continua `enroll_number`. É o oposto do problema do JSON — lá os nomes **iam no
+dado** e precisavam ser reconciliados pela política do Gson (e pela constante
+`CAMPOS` repetida nos dois lados); aqui nenhum nome atravessa o fio, então nada
+precisa ser combinado além do próprio `.proto`.
+
+**A ponta Java é estrita; a ponta Python, não.** Passando para os dois o stream
+nativo do Java, o Java recusa com uma exceção que nomeia o problema, e o Python
+apenas **avisa** e devolve um objeto vazio:
+
+```
+Java:   Falha ao desserializar: Protocol message end-group tag did not match
+        expected tag.                        ← InvalidProtocolBufferException
+Python: RuntimeWarning: Unexpected end-group tag: Not all data was converted
+        Name:                                ← todos os campos no valor padrão
+```
+
+O programa Python seguiria adiante com um `Person` em branco se não houvesse a
+conferência por re-serialização — é ela que transforma o aviso em erro
+(`ATENÇÃO: a re-serialização não bate com a entrada`, com saída não-zero). Com o
+stream truncado no meio de um campo, aí sim as duas pontas levantam exceção
+(`DecodeError` no Python, `InvalidProtocolBufferException` no Java). O stream do
+pickle cai no mesmo aviso do lado Python e numa outra mensagem do lado Java
+(`Protocol message contained an invalid tag (zero)`).
+
+**No proto3 não existe campo obrigatório, e o valor padrão não vai no fio.** Um
+`Person` recém-criado serializa em **0 bytes**, e esses 0 bytes voltam a ser um
+`Person` válido com todos os campos no padrão — sem aviso nenhum, porque é
+exatamente o que o formato promete. Preenchendo só o nome, o stream tem 13 bytes:
+os campos 2, 3 e 4 ficam de fora, e nada no dado distingue "ausente" de "zero".
+É o preço do tamanho: o `Serializable` do Java gravava todos os campos e o
+esquema junto, e por isso conseguia recusar um objeto incompatível.
+
+**A versão do runtime acompanha a do `protoc`.** O `protoc` 3.6.1 (o do `apt`
+aqui) gera um `MyApp_pb2.py` que monta os descritores em Python puro, forma que
+o runtime `protobuf` 4.x recusa de saída:
+
+```
+TypeError: Descriptors cannot not be created directly.
+```
+
+Daí o `run.sh` fixar `protobuf==3.20.3` no venv do módulo e o jar
+`protobuf-java-3.6.1.jar` no classpath: o código gerado e o runtime são um par.
+Regenerar com um `protoc` novo é a outra metade da resposta — a IDL continua a
+mesma, o que muda é só o código gerado.
 
 ### Tamanho: "texto gasta mais bytes" depende do dado
 
