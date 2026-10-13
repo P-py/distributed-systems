@@ -11,7 +11,7 @@ class my_application():
     def server(self):
         self.s = self.c.socket(zmq.REP)
         self.s.bind(self.host)
-        print(f"Server listening on {self.host}...")
+        print(f"Servidor ouvindo em {self.host}...")
         while True:
             r = self.s.recv()
             print(f"{len(r)}, {r}")
