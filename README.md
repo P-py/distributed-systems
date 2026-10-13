@@ -29,7 +29,7 @@ canal e voltar a ser objeto do outro lado. É a **serialização**, tema do
 [04-grpc](04-grpc/) fecha o caminho: uma IDL descreve o **serviço**, e a chamada
 remota passa a ser código gerado. O [05-zmq](05-zmq/) volta um passo e troca a
 chamada pela **mensagem**: filas embutidas na aplicação, sem *broker*, em
-padrões de requisição-resposta e publish-subscribe.
+padrões de requisição-resposta, publish-subscribe e distribuição de trabalho.
 
 ## Módulos
 
@@ -39,7 +39,7 @@ padrões de requisição-resposta e publish-subscribe.
 | [**02-sockets**](02-sockets/README.md) | Sockets, HTTP e XML-RPC | TCP, `listen()`/`accept()`, concorrência com threads, HTTP, RPC |
 | [**03-serialization**](03-serialization/README.md) | Serialização | Formatos nativos, JSON e Protocol Buffers entre Java e Python |
 | [**04-grpc**](04-grpc/README.md) | Chamada de procedimento remoto | IDL com `service`, stubs gerados, status de erro, HTTP/2 |
-| [**05-zmq**](05-zmq/README.md) | Mensageria embutida | ZeroMQ, `REQ`/`REP`, multipart, `PUB`/`SUB` com tópicos |
+| [**05-zmq**](05-zmq/README.md) | Mensageria embutida | ZeroMQ, `REQ`/`REP`, multipart, `PUB`/`SUB` com tópicos, `PUSH`/`PULL` |
 
 <details>
 <summary><b>01 — Memória compartilhada</b></summary>
@@ -113,12 +113,16 @@ roteiro de criar, buscar, remover e tentar buscar o que não existe mais.
 Mensagens em vez de chamadas, sem servidor central: o ZeroMQ cuida da conexão,
 da reconexão e do enquadramento, e a aplicação escolhe o padrão. O módulo sai
 de um `HELO` em requisição-resposta, desce aos bytes por baixo das conveniências
-do `pyzmq`, monta um protocolo de duas etapas com mensagens de vários *frames* e
-termina num publish-subscribe filtrado por tópico.
+do `pyzmq`, monta um protocolo de duas etapas com mensagens de vários *frames*,
+filtra um publish-subscribe por tópico, divide um lote de tarefas entre workers
+e termina num esboço de agregador que combina dois padrões.
 
 - `exp6-1.py` / `exp6-6.py` — `REQ`/`REP` com strings e com bytes crus
 - `exp6-7/` — calculadora com `send_multipart`/`recv_multipart`
 - `exp6-8/` — publicador de tópicos `A`–`D` e dois assinantes (um tópico e todos)
+- `exp7_3/` — `PUSH`/`PULL`: ventilador, workers e sink, medindo o ganho do paralelismo
+- `exp7_6/` — o `Person` publicado em protobuf e em JSON, com o tópico no primeiro *frame*
+- `exp7_7/` — agregador de locadoras: pergunta por `PUB`/`SUB`, recolhe por `REQ`/`REP`
 
 → [detalhes em `05-zmq/README.md`](05-zmq/README.md)
 
@@ -146,7 +150,8 @@ parte em Java, e o 04 e o 05 têm cada um o seu próprio venv.
 - **NumPy** — apenas para o `shm_numpy_histogram.py`
 - **JDK 11+** — apenas para as partes em Java do módulo 03
 - **grpcio / grpcio-tools** — apenas para o módulo 04, no `.venv` dele
-- **pyzmq** — apenas para o módulo 05, no `.venv` dele
+- **pyzmq / grpcio-tools** — apenas para o módulo 05, no `.venv` dele (o
+  `grpcio-tools` traz o runtime `protobuf` 5.x e o `protoc` do `exp7_6/`)
 - **Gson 2.13.1** — apenas para `03-serialization/json`; o `run.sh` baixa o jar
 - **protobuf 3.6.1** — para `03-serialization/protobuf`: o `run.sh` baixa o jar e
   instala o runtime do Python no venv do módulo, nas versões do `protoc` que gerou
