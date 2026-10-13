@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message Person {
+  string name = 1;
+  double height = 2;
+  repeated int32 luck_numbers = 3;
+}
