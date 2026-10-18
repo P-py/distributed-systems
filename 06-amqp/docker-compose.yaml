@@ -1,0 +1,12 @@
+services:
+  lavinmq:
+    image: cloudamqp/lavinmq:latest
+    ports:
+      - "1883:1883"
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - "lavinmq:/var/lib/lavinmq"
+    network_mode: bridge
+volumes:
+  lavinmq:
