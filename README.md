@@ -30,6 +30,8 @@ canal e voltar a ser objeto do outro lado. É a **serialização**, tema do
 remota passa a ser código gerado. O [05-zmq](05-zmq/) volta um passo e troca a
 chamada pela **mensagem**: filas embutidas na aplicação, sem *broker*, em
 padrões de requisição-resposta, publish-subscribe e distribuição de trabalho.
+O [06-amqp](06-amqp/) recoloca o intermediário: um *broker* AMQP (o LavinMQ)
+guarda as mensagens em filas e as roteia por *exchanges*.
 
 ## Módulos
 
@@ -40,6 +42,7 @@ padrões de requisição-resposta, publish-subscribe e distribuição de trabalh
 | [**03-serialization**](03-serialization/README.md) | Serialização | Formatos nativos, JSON e Protocol Buffers entre Java e Python |
 | [**04-grpc**](04-grpc/README.md) | Chamada de procedimento remoto | IDL com `service`, stubs gerados, status de erro, HTTP/2 |
 | [**05-zmq**](05-zmq/README.md) | Mensageria embutida | ZeroMQ, `REQ`/`REP`, multipart, `PUB`/`SUB` com tópicos, `PUSH`/`PULL` |
+| [**06-amqp**](06-amqp/README.md) | Mensageria com *broker* | AMQP 0-9-1, LavinMQ em Docker Compose, filas, *exchanges* `direct`, `fanout` e `topic` |
 
 <details>
 <summary><b>01 — Memória compartilhada</b></summary>
@@ -128,6 +131,24 @@ e termina num esboço de agregador que combina dois padrões.
 
 </details>
 
+<details>
+<summary><b>06 — Mensageria com AMQP</b></summary>
+
+As mensagens voltam a passar por um servidor central: o **LavinMQ**, um *broker*
+AMQP 0-9-1 compatível com os clientes do RabbitMQ, sobe num contêiner, e os
+produtores publicam em *exchanges* que roteiam para filas onde os consumidores
+leem e confirmam. O módulo sai da fila endereçada pelo nome e chega ao filtro
+por tópico, passando pela entrega a uma fila e pela cópia a todas.
+
+- `docker-compose.yaml` — o LavinMQ do enunciado: AMQP na 5672, MQTT na 1883 e gerenciamento na 15672
+- `exp8_1.py` — produtor e consumidor no mesmo script, pela *exchange* padrão
+- `exp8_5.py` — uma *exchange* `direct` e uma `fanout` alimentando as mesmas filas
+- `q6/` — *exchange* `topic` com quatro filas, de chave exata a `notification.#`
+
+→ [detalhes em `06-amqp/README.md`](06-amqp/README.md)
+
+</details>
+
 ## Como executar
 
 ```bash
@@ -140,9 +161,11 @@ Cada módulo traz seus próprios comandos: veja a seção **Como executar** do
 [01](01-shared-memory/README.md#como-executar), do
 [02](02-sockets/README.md#como-executar), do
 [03](03-serialization/README.md#como-executar), do
-[04](04-grpc/README.md#como-executar) ou do
-[05](05-zmq/README.md#como-executar) — o 03 inclui os passos de compilação da
-parte em Java, e o 04 e o 05 têm cada um o seu próprio venv.
+[04](04-grpc/README.md#como-executar), do
+[05](05-zmq/README.md#como-executar) ou do
+[06](06-amqp/README.md#como-executar) — o 03 inclui os passos de compilação da
+parte em Java, o 04, o 05 e o 06 têm cada um o seu próprio venv, e o 06 sobe o
+*broker* com o Docker Compose.
 
 ## Requisitos
 
@@ -152,6 +175,8 @@ parte em Java, e o 04 e o 05 têm cada um o seu próprio venv.
 - **grpcio / grpcio-tools** — apenas para o módulo 04, no `.venv` dele
 - **pyzmq / grpcio-tools** — apenas para o módulo 05, no `.venv` dele (o
   `grpcio-tools` traz o runtime `protobuf` 5.x e o `protoc` do `exp7_6/`)
+- **Docker com Compose** e **pika** — apenas para o módulo 06: o Compose sobe o
+  LavinMQ, e o `pika` (no `.venv` do módulo) é o cliente AMQP
 - **Gson 2.13.1** — apenas para `03-serialization/json`; o `run.sh` baixa o jar
 - **protobuf 3.6.1** — para `03-serialization/protobuf`: o `run.sh` baixa o jar e
   instala o runtime do Python no venv do módulo, nas versões do `protoc` que gerou
